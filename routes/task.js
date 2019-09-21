@@ -4,10 +4,10 @@ const taskController = require("../controllers/task");
 
 const router = express.Router();
 
-// GET /task/all return ALL TASK
+// GET /task return ALL TASK
 router.get("/", taskController.getTasks);
 
-// POST /task/create create NEW TASK
+// POST /task create NEW TASK
 router.post("/", taskController.createTask);
 
 // GET /task/:id return one task

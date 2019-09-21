@@ -5,10 +5,11 @@ const mongoose = require("mongoose");
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 const taskRoutes = require("./routes/task");
 
-app.use("/task", taskRoutes);
+app.use("/api/task", taskRoutes);
 
 const port = 5000;
 mongoose

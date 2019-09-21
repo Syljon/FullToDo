@@ -1,32 +1,31 @@
 import "./App.css";
-import React from "react";
-import Typography from "@material-ui/core/Typography";
+import React, { useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Header from "./components/Header/Header";
 import TaskList from "./components/TaskList/TaskList";
 import TaskNavigation from "./components/TaskNavigation/TaskNavigation";
+import Task from "./components/Task/Task";
+import AddDialog from "./components/AddDialog/AddDialog";
+
+import AddIcon from "@material-ui/icons/Add";
+import Fab from "@material-ui/core/Fab";
+import _ from "lodash";
+import axios from "axios";
 
 const drawerWidth = 300;
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles({
   root: {
     display: "flex"
   },
-  drawer: {
-    [theme.breakpoints.up("sm")]: {
-      width: drawerWidth,
-      flexShrink: 0
-    }
-  },
-  toolbar: theme.mixins.toolbar,
-  drawerPaper: {
-    width: drawerWidth
-  },
-  content: {
-    flexGrow: 1,
-    padding: theme.spacing(3)
+  fabButton: {
+    position: "fixed",
+    zIndex: 1,
+    bottom: "1rem",
+    right: "1rem",
+    margin: "0 auto"
   }
-}));
+});
 
 function App() {
   let vh = window.innerHeight * 0.01;
@@ -35,24 +34,50 @@ function App() {
   const classes = useStyles();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
+  const [fetchedTask, setfetchedTask] = React.useState([]);
+
+  const [showedTask, setshowedTask] = React.useState({});
+
+  function handleDialogToggle() {
+    setDialogOpen(!dialogOpen);
+  }
+
   function handleDrawerToggle() {
     setMobileOpen(!mobileOpen);
   }
+  function clickNav(index) {
+    const task = _.find(fetchedTask, { _id: index });
+    task.description = task.description;
+    console.log(task);
+    setshowedTask(task);
+  }
+
+  function orderBy(value) {
+    console.log(value);
+    const newTaskList = _.orderBy(
+      fetchedTask,
+      value,
+      value === "priority" ? "desc" : "asc"
+    );
+    console.log(newTaskList);
+    setfetchedTask(newTaskList);
+  }
+
+  useEffect(() => {
+    axios
+      .get("/api/task/")
+      .then(res => setfetchedTask(res.data))
+      .catch(err => console.log(err));
+  }, []);
 
   const drawer = (
     <TaskList
-      taskList={[
-        "Inbox",
-        "Starred",
-        "Send email",
-        "Drafts",
-        "Send email",
-        "Drafts",
-        "Send email",
-        "Drafts",
-        "Send email",
-        "Drafts"
-      ]}
+      clicked={clickNav}
+      orderBy={orderBy}
+      taskList={fetchedTask}
+      showedTask={showedTask}
     ></TaskList>
   );
 
@@ -68,24 +93,15 @@ function App() {
         drawer={drawer}
         mobileOpen={mobileOpen}
       ></TaskNavigation>
-      <main className={classes.content}>
-        <div className={classes.toolbar} />
-        <Typography paragraph>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-          eiusmod tempor incididunt ut labore et dolore magna aliqua. Rhoncus
-          dolor purus non enim praesent elementum facilisis leo vel. Risus at
-          ultrices mi tempus imperdiet. Semper risus in hendrerit gravida rutrum
-          quisque non tellus. Convallis convallis tellus id interdum velit
-          laoreet id donec ultrices. Odio morbi quis commodo odio aenean sed
-          adipiscing. Amet nisl suscipit adipiscing bibendum est ultricies
-          integer quis. Cursus euismod quis viverra nibh cras. Metus vulputate
-          eu scelerisque felis imperdiet proin fermentum leo. Mauris commodo
-          quis imperdiet massa tincidunt. Cras tincidunt lobortis feugiat
-          vivamus at augue. At augue eget arcu dictum varius duis at consectetur
-          lorem. Velit sed ullamcorper morbi tincidunt. Lorem donec massa sapien
-          faucibus et molestie ac.
-        </Typography>
-      </main>
+      <Task showedTask={showedTask}></Task>
+      <AddDialog open={dialogOpen} handleClose={handleDialogToggle}></AddDialog>
+      <Fab
+        color="secondary"
+        onClick={handleDialogToggle}
+        className={classes.fabButton}
+      >
+        <AddIcon />
+      </Fab>
     </div>
   );
 }
