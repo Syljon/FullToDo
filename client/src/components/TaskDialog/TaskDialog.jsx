@@ -13,6 +13,8 @@ import FormControlLabel from "@material-ui/core/FormControlLabel";
 import FormControl from "@material-ui/core/FormControl";
 import FormLabel from "@material-ui/core/FormLabel";
 import axios from "axios";
+import validateForm from "../../util/validation";
+import FormHelperText from "@material-ui/core/FormHelperText";
 
 const useStyles = makeStyles({
   header: { padding: "16px 24px 0" },
@@ -21,6 +23,7 @@ const useStyles = makeStyles({
     justifyContent: "center"
   },
   container: {
+    width: "100%",
     padding: "4px 24px"
   },
   formControl: {
@@ -28,7 +31,7 @@ const useStyles = makeStyles({
   },
   radioGroup: { flexDirection: "row" }
 });
-export default function AddDialog(props) {
+export default function TaskDialog(props) {
   const classes = useStyles(props);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
@@ -37,6 +40,11 @@ export default function AddDialog(props) {
     title: "",
     priority: 0,
     multiline: ""
+  });
+
+  const [formErrors, setFormErrors] = React.useState({
+    errors: {},
+    isValid: false
   });
 
   const handleChange = name => event => {
@@ -51,12 +59,22 @@ export default function AddDialog(props) {
       description: values.multiline,
       createdDate: new Date()
     };
-
-    axios
-      .post("/api/task/", body)
-      .then(res => console.log(res))
-      .catch(err => console.log(err));
-    props.handleClose();
+    const results = validateForm(body);
+    setFormErrors({
+      ...formErrors,
+      errors: results.errors,
+      isValid: results.isValid
+    });
+    if (results.isValid) {
+      axios
+        .post("/api/task/", body)
+        .then(res => {
+          props.updateFetchedTask(res.data);
+          console.log(res.data);
+        })
+        .catch(err => console.log(err));
+      props.handleClose();
+    }
   };
   return (
     <div>
@@ -69,14 +87,17 @@ export default function AddDialog(props) {
         <DialogContent className={classes.container}>
           <form noValidate onSubmit={submitForm} autoComplete="off">
             <TextField
+              error={formErrors.errors.title ? true : false}
               id="title"
               label="Title"
               className={classes.textField}
               value={values.title}
               fullWidth
               onChange={handleChange("title")}
-              margin="normal"
             />
+            <FormHelperText error={formErrors.errors.title ? true : false}>
+              {formErrors.errors.title}
+            </FormHelperText>
             <TextField
               id="standard"
               label="Description"
@@ -87,9 +108,12 @@ export default function AddDialog(props) {
               value={values.multiline}
               onChange={handleChange("multiline")}
               className={classes.textField}
-              margin="normal"
             />
-            <FormControl component="fieldset" className={classes.formControl}>
+            <FormControl
+              error={formErrors.errors.priority ? true : false}
+              component="fieldset"
+              className={classes.formControl}
+            >
               <FormLabel component="legend">Priority</FormLabel>
               <RadioGroup
                 className={classes.radioGroup}
@@ -98,7 +122,7 @@ export default function AddDialog(props) {
                 value={values.priority}
                 onChange={handleChange("priority")}
               >
-                {["1", "2", "3"].map(p => (
+                {["1", "2", "3", "4", "5"].map(p => (
                   <FormControlLabel
                     key={p}
                     value={p}
@@ -108,6 +132,9 @@ export default function AddDialog(props) {
                   />
                 ))}
               </RadioGroup>
+              <FormHelperText error={formErrors.errors.priority ? true : false}>
+                {formErrors.errors.priority}
+              </FormHelperText>
             </FormControl>
             <DialogActions className={classes.actions}>
               <Button
@@ -115,15 +142,14 @@ export default function AddDialog(props) {
                 size="medium"
                 color="primary"
                 type="submit"
-                className={classes.margin}
               >
                 Create
               </Button>
               <Button
+                onClick={props.handleClose}
                 variant="contained"
                 size="medium"
                 color="inherit"
-                className={classes.margin}
               >
                 Cancel
               </Button>

@@ -5,9 +5,9 @@ import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import MenuItem from "@material-ui/core/MenuItem";
-import FormHelperText from "@material-ui/core/FormHelperText";
 import FormControl from "@material-ui/core/FormControl";
 import Select from "@material-ui/core/Select";
+import orderBy from "../../util/orderBy";
 
 const useStyles = makeStyles(theme => ({
   toolbar: {
@@ -16,7 +16,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-export default function TaskList(props) {
+export default function Drawer(props) {
   const classes = useStyles(props);
 
   const [values, setValues] = React.useState({
@@ -24,8 +24,7 @@ export default function TaskList(props) {
   });
 
   function handleChange(event) {
-    console.log(event.target.value);
-    props.orderBy(event.target.value);
+    orderBy(props.tasksList, event.target.value, props.setTasksList);
     setValues(oldValues => ({
       ...oldValues,
       [event.target.name]: event.target.value
@@ -53,20 +52,28 @@ export default function TaskList(props) {
       </div>
       <Divider />
       <List>
-        {props.taskList.map(({ _id, title }) => (
-          <ListItem
-            onClick={() => {
-              props.clicked(_id);
-            }}
-            selected={
-              props.showedTask && props.showedTask._id === _id ? true : false
-            }
-            button
-            key={_id}
-          >
-            <ListItemText style={{ wordBreak: "break-all" }} primary={title} />
-          </ListItem>
-        ))}
+        {props.tasksList.map(({ _id, title, priority }) => {
+          return (
+            <ListItem
+              onClick={() => {
+                props.clicked(_id);
+              }}
+              selected={
+                props.selectedTask && props.selectedTask._id === _id
+                  ? true
+                  : false
+              }
+              button
+              key={_id}
+              style={{ borderLeft: "5px solid " + props.colors[priority - 1] }}
+            >
+              <ListItemText
+                style={{ wordBreak: "break-all" }}
+                primary={title}
+              />
+            </ListItem>
+          );
+        })}
       </List>
     </div>
   );

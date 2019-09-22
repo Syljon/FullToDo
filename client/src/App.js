@@ -1,18 +1,15 @@
-import "./App.css";
 import React, { useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Header from "./components/Header/Header";
-import TaskList from "./components/TaskList/TaskList";
+import Drawer from "./components/Drawer/Drawer";
 import TaskNavigation from "./components/TaskNavigation/TaskNavigation";
 import Task from "./components/Task/Task";
-import AddDialog from "./components/AddDialog/AddDialog";
-
+import TaskDialog from "./components/TaskDialog/TaskDialog";
 import AddIcon from "@material-ui/icons/Add";
 import Fab from "@material-ui/core/Fab";
 import _ from "lodash";
-import axios from "axios";
-
-const drawerWidth = 300;
+import { getTasks } from "./httpRequests";
+import "./App.css";
 
 const useStyles = makeStyles({
   root: {
@@ -32,72 +29,77 @@ function App() {
   document.documentElement.style.setProperty("--vh", `${vh}px`);
 
   const classes = useStyles();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const drawerWidth = 250;
 
-  const [fetchedTask, setfetchedTask] = React.useState([]);
+  const [openStatus, setOpenToggle] = React.useState({
+    drawer: false,
+    dialog: false
+  });
 
-  const [showedTask, setshowedTask] = React.useState({});
+  const [tasksList, setTasksList] = React.useState([]);
 
-  function handleDialogToggle() {
-    setDialogOpen(!dialogOpen);
+  const [selectedTask, setSelectedTask] = React.useState({});
+
+  const colors = ["green", "yellow", "orange", "red", "maroon"];
+
+  function handleOpenToggle(name) {
+    setOpenToggle({ ...openStatus, [name]: !openStatus[name] });
   }
 
-  function handleDrawerToggle() {
-    setMobileOpen(!mobileOpen);
-  }
-  function clickNav(index) {
-    const task = _.find(fetchedTask, { _id: index });
-    task.description = task.description;
-    console.log(task);
-    setshowedTask(task);
+  function selectTask(id) {
+    const task = _.find(tasksList, { _id: id });
+    setSelectedTask(task);
   }
 
-  function orderBy(value) {
-    console.log(value);
-    const newTaskList = _.orderBy(
-      fetchedTask,
-      value,
-      value === "priority" ? "desc" : "asc"
-    );
-    console.log(newTaskList);
-    setfetchedTask(newTaskList);
+  function updateFetchedTask(newTask) {
+    const tasks = [...tasksList, newTask];
+    setTasksList(tasks);
   }
 
   useEffect(() => {
-    axios
-      .get("/api/task/")
-      .then(res => setfetchedTask(res.data))
+    getTasks()
+      .then(res => setTasksList(res))
       .catch(err => console.log(err));
   }, []);
 
+  window.addEventListener("resize", () => {
+    if (openStatus.drawer) {
+      handleOpenToggle("drawer");
+    }
+  });
+
   const drawer = (
-    <TaskList
-      clicked={clickNav}
-      orderBy={orderBy}
-      taskList={fetchedTask}
-      showedTask={showedTask}
-    ></TaskList>
+    <Drawer
+      colors={colors}
+      clicked={selectTask}
+      tasksList={tasksList}
+      setTasksList={setTasksList}
+      selectedTask={selectedTask}
+    ></Drawer>
   );
 
   return (
     <div className={classes.root}>
       <Header
         drawerWidth={drawerWidth}
-        drawerToggle={handleDrawerToggle}
-      ></Header>
+        drawerToggle={() => handleOpenToggle("drawer")}
+      />
       <TaskNavigation
         drawerWidth={drawerWidth}
-        drawerToggle={handleDrawerToggle}
+        drawerToggle={() => handleOpenToggle("drawer")}
         drawer={drawer}
-        mobileOpen={mobileOpen}
-      ></TaskNavigation>
-      <Task showedTask={showedTask}></Task>
-      <AddDialog open={dialogOpen} handleClose={handleDialogToggle}></AddDialog>
+        mobileOpen={openStatus.drawer}
+      />
+      <Task selectedTask={selectedTask}></Task>
+      <TaskDialog
+        updateFetchedTask={updateFetchedTask}
+        open={openStatus.dialog}
+        handleClose={() => handleOpenToggle("dialog")}
+      />
       <Fab
         color="secondary"
-        onClick={handleDialogToggle}
+        onClick={() => handleOpenToggle("dialog")}
         className={classes.fabButton}
       >
         <AddIcon />
