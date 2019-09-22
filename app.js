@@ -20,7 +20,7 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-const port = 5000;
+const port = process.env.PORT || 5000;
 mongoose
   .connect(process.env.dbURL, {
     useNewUrlParser: true,
