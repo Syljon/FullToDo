@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const path = require("path");
 
 const app = express();
 
@@ -10,6 +11,13 @@ app.use(bodyParser.json());
 const taskRoutes = require("./routes/task");
 
 app.use("/api/task", taskRoutes);
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static("client/build"));
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "client", "build", "index.html"));
+  });
+}
 
 const port = 5000;
 mongoose
