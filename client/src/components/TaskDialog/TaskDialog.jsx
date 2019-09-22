@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Button from "@material-ui/core/Button";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
@@ -12,7 +12,7 @@ import RadioGroup from "@material-ui/core/RadioGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import FormControl from "@material-ui/core/FormControl";
 import FormLabel from "@material-ui/core/FormLabel";
-import axios from "axios";
+import { createTask, updateTask } from "../../httpRequests";
 import validateForm from "../../util/validation";
 import FormHelperText from "@material-ui/core/FormHelperText";
 
@@ -31,7 +31,7 @@ const useStyles = makeStyles({
   },
   radioGroup: { flexDirection: "row" }
 });
-export default function TaskDialog(props) {
+const TaskDialog = props => {
   const classes = useStyles(props);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
@@ -39,26 +39,25 @@ export default function TaskDialog(props) {
   const [values, setValues] = React.useState({
     title: "",
     priority: 0,
-    multiline: ""
+    description: ""
   });
 
   const [formErrors, setFormErrors] = React.useState({
     errors: {},
     isValid: false
   });
-
+  useEffect(() => {
+    if (props.editing) {
+      setValues(props.selectedTask);
+    }
+  }, [props.editing, props.selectedTask]);
   const handleChange = name => event => {
     setValues({ ...values, [name]: event.target.value });
   };
 
   const submitForm = e => {
     e.preventDefault();
-    const body = {
-      title: values.title,
-      priority: values.priority,
-      description: values.multiline,
-      createdDate: new Date()
-    };
+    const body = { ...values };
     const results = validateForm(body);
     setFormErrors({
       ...formErrors,
@@ -66,14 +65,23 @@ export default function TaskDialog(props) {
       isValid: results.isValid
     });
     if (results.isValid) {
-      axios
-        .post("/api/task/", body)
-        .then(res => {
-          props.updateFetchedTask(res.data);
-          console.log(res.data);
-        })
-        .catch(err => console.log(err));
-      props.handleClose();
+      if (props.editing) {
+        updateTask(body)
+          .then(res => {
+            props.updateTaskList(res);
+            props.snackbar("Update");
+            props.handleClose();
+          })
+          .catch(err => console.log(err));
+      } else {
+        createTask(body)
+          .then(res => {
+            props.updateTaskList(res);
+            props.snackbar("Create");
+            props.handleClose();
+          })
+          .catch(err => console.log(err));
+      }
     }
   };
   return (
@@ -105,8 +113,8 @@ export default function TaskDialog(props) {
               fullWidth
               rows="4"
               rowsMax="4"
-              value={values.multiline}
-              onChange={handleChange("multiline")}
+              value={values.description}
+              onChange={handleChange("description")}
               className={classes.textField}
             />
             <FormControl
@@ -119,7 +127,7 @@ export default function TaskDialog(props) {
                 className={classes.radioGroup}
                 aria-label="gender"
                 name="gender1"
-                value={values.priority}
+                value={values.priority.toString()}
                 onChange={handleChange("priority")}
               >
                 {["1", "2", "3", "4", "5"].map(p => (
@@ -159,4 +167,5 @@ export default function TaskDialog(props) {
       </Dialog>
     </div>
   );
-}
+};
+export default TaskDialog;

@@ -8,8 +8,10 @@ import TaskDialog from "./components/TaskDialog/TaskDialog";
 import AddIcon from "@material-ui/icons/Add";
 import Fab from "@material-ui/core/Fab";
 import _ from "lodash";
-import { getTasks } from "./httpRequests";
+import { getTasks, deleteTask } from "./httpRequests";
 import "./App.css";
+
+import { withSnackbar, useSnackbar } from "notistack";
 
 const useStyles = makeStyles({
   root: {
@@ -32,6 +34,14 @@ function App() {
 
   const drawerWidth = 250;
 
+  const { enqueueSnackbar } = useSnackbar();
+  const snackbar = (message = "test", type = "success") => {
+    enqueueSnackbar(message, {
+      variant: type,
+      autoHideDuration: 2000
+    });
+  };
+
   const [openStatus, setOpenToggle] = React.useState({
     drawer: false,
     dialog: false
@@ -39,11 +49,20 @@ function App() {
 
   const [tasksList, setTasksList] = React.useState([]);
 
-  const [selectedTask, setSelectedTask] = React.useState({});
+  const [selectedTask, setSelectedTask] = React.useState({
+    title: "",
+    priority: 0,
+    description: ""
+  });
+
+  const [editing, setEditing] = React.useState(false);
 
   const colors = ["green", "yellow", "orange", "red", "maroon"];
 
   function handleOpenToggle(name) {
+    if (name === "dialog" && openStatus.dialog) {
+      setEditing(false);
+    }
     setOpenToggle({ ...openStatus, [name]: !openStatus[name] });
   }
 
@@ -52,9 +71,43 @@ function App() {
     setSelectedTask(task);
   }
 
-  function updateFetchedTask(newTask) {
-    const tasks = [...tasksList, newTask];
+  function updateTaskList(newTask) {
+    let tasks = tasksList;
+
+    const match = _.find(tasksList, { _id: newTask._id });
+    if (match) {
+      tasks = tasksList.filter(t => t._id !== newTask._id);
+      tasks = [...tasks, newTask];
+    } else {
+      tasks = [...tasksList, newTask];
+    }
     setTasksList(tasks);
+    setSelectedTask({
+      title: "",
+      priority: 0,
+      description: ""
+    });
+  }
+  function editTask() {
+    setEditing(!editing);
+    handleOpenToggle("dialog");
+  }
+
+  function removeTaskFromList(newTask) {
+    deleteTask(newTask._id)
+      .then(res => {
+        console.log(newTask);
+        let tasks = tasksList;
+        tasks = tasksList.filter(t => t._id !== newTask._id);
+        setTasksList(tasks);
+        setSelectedTask({
+          title: "",
+          priority: 0,
+          description: ""
+        });
+        snackbar("Task removed");
+      })
+      .catch(err => console.log(err));
   }
 
   useEffect(() => {
@@ -78,7 +131,6 @@ function App() {
       selectedTask={selectedTask}
     ></Drawer>
   );
-
   return (
     <div className={classes.root}>
       <Header
@@ -91,9 +143,16 @@ function App() {
         drawer={drawer}
         mobileOpen={openStatus.drawer}
       />
-      <Task selectedTask={selectedTask}></Task>
+      <Task
+        removeTaskFromList={removeTaskFromList}
+        editTask={editTask}
+        selectedTask={selectedTask}
+      ></Task>
       <TaskDialog
-        updateFetchedTask={updateFetchedTask}
+        snackbar={snackbar}
+        editing={editing}
+        selectedTask={selectedTask}
+        updateTaskList={updateTaskList}
         open={openStatus.dialog}
         handleClose={() => handleOpenToggle("dialog")}
       />
@@ -108,4 +167,4 @@ function App() {
   );
 }
 
-export default App;
+export default withSnackbar(App);

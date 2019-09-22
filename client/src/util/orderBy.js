@@ -22,6 +22,5 @@ export default function orderBy(fetchedTask, value, cb) {
       newTaskList = fetchedTask;
       break;
   }
-  console.log(newTaskList);
   cb(newTaskList);
 }

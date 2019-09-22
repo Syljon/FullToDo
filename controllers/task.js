@@ -27,7 +27,6 @@ exports.createTask = (req, res, next) => {
   task
     .save()
     .then(result => {
-      console.log("TASK Created", result);
       return res.status(200).json(result);
     })
     .catch(err => {
@@ -49,7 +48,6 @@ exports.updateTask = (req, res, next) => {
 };
 
 exports.deleteTask = (req, res, next) => {
-  console.log(req.params.id);
   Task.findByIdAndRemove(req.params.id)
     .then(() => res.json({ messege: "Task Removed" }))
     .catch(err => console.log(err));
