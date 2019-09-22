@@ -1,17 +1,18 @@
 import React, { useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
+import _ from "lodash";
+import { withSnackbar, useSnackbar } from "notistack";
+import AddIcon from "@material-ui/icons/Add";
+import Fab from "@material-ui/core/Fab";
+import { getTasks, deleteTask } from "./httpRequests";
+import orderBy from "./util/orderBy";
 import Header from "./components/Header/Header";
 import Drawer from "./components/Drawer/Drawer";
 import TaskNavigation from "./components/TaskNavigation/TaskNavigation";
 import Task from "./components/Task/Task";
 import TaskDialog from "./components/TaskDialog/TaskDialog";
-import AddIcon from "@material-ui/icons/Add";
-import Fab from "@material-ui/core/Fab";
-import _ from "lodash";
-import { getTasks, deleteTask } from "./httpRequests";
-import "./App.css";
 
-import { withSnackbar, useSnackbar } from "notistack";
+import "./App.css";
 
 const useStyles = makeStyles({
   root: {
@@ -34,20 +35,14 @@ function App() {
 
   const drawerWidth = 250;
 
-  const { enqueueSnackbar } = useSnackbar();
-  const snackbar = (message = "test", type = "success") => {
-    enqueueSnackbar(message, {
-      variant: type,
-      autoHideDuration: 2000
-    });
-  };
-
   const [openStatus, setOpenToggle] = React.useState({
     drawer: false,
     dialog: false
   });
 
   const [tasksList, setTasksList] = React.useState([]);
+
+  const [sortBy, setSortBy] = React.useState("title");
 
   const [selectedTask, setSelectedTask] = React.useState({
     title: "",
@@ -59,6 +54,14 @@ function App() {
 
   const colors = ["green", "yellow", "orange", "red", "maroon"];
 
+  const { enqueueSnackbar } = useSnackbar();
+  function snackbar(message = "test", type = "success") {
+    enqueueSnackbar(message, {
+      variant: type,
+      autoHideDuration: 2000
+    });
+  }
+
   function handleOpenToggle(name) {
     if (name === "dialog" && openStatus.dialog) {
       setEditing(false);
@@ -69,9 +72,14 @@ function App() {
   function selectTask(id) {
     const task = _.find(tasksList, { _id: id });
     setSelectedTask(task);
+    setOpenToggle({ ...openStatus, drawer: false });
   }
 
-  function updateTaskList(newTask) {
+  function updateTaskList(newList) {
+    setTasksList(orderBy(newList, sortBy));
+  }
+
+  function updateTasks(newTask) {
     let tasks = tasksList;
 
     const match = _.find(tasksList, { _id: newTask._id });
@@ -81,13 +89,14 @@ function App() {
     } else {
       tasks = [...tasksList, newTask];
     }
-    setTasksList(tasks);
+    updateTaskList(tasks);
     setSelectedTask({
       title: "",
       priority: 0,
       description: ""
     });
   }
+
   function editTask() {
     setEditing(!editing);
     handleOpenToggle("dialog");
@@ -99,7 +108,7 @@ function App() {
         console.log(newTask);
         let tasks = tasksList;
         tasks = tasksList.filter(t => t._id !== newTask._id);
-        setTasksList(tasks);
+        updateTaskList(tasks);
         setSelectedTask({
           title: "",
           priority: 0,
@@ -112,7 +121,7 @@ function App() {
 
   useEffect(() => {
     getTasks()
-      .then(res => setTasksList(res))
+      .then(res => updateTaskList(res))
       .catch(err => console.log(err));
   }, []);
 
@@ -127,6 +136,8 @@ function App() {
       colors={colors}
       clicked={selectTask}
       tasksList={tasksList}
+      setSortBy={setSortBy}
+      sortBy={sortBy}
       setTasksList={setTasksList}
       selectedTask={selectedTask}
     ></Drawer>
@@ -152,7 +163,7 @@ function App() {
         snackbar={snackbar}
         editing={editing}
         selectedTask={selectedTask}
-        updateTaskList={updateTaskList}
+        updateTasks={updateTasks}
         open={openStatus.dialog}
         handleClose={() => handleOpenToggle("dialog")}
       />

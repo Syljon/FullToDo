@@ -1,17 +1,19 @@
 import React, { useEffect } from "react";
-import Button from "@material-ui/core/Button";
-import Dialog from "@material-ui/core/Dialog";
-import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogTitle from "@material-ui/core/DialogTitle";
-import useMediaQuery from "@material-ui/core/useMediaQuery";
-import TextField from "@material-ui/core/TextField";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  useMediaQuery,
+  TextField,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  FormLabel
+} from "@material-ui/core";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
-import Radio from "@material-ui/core/Radio";
-import RadioGroup from "@material-ui/core/RadioGroup";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import FormControl from "@material-ui/core/FormControl";
-import FormLabel from "@material-ui/core/FormLabel";
 import { createTask, updateTask } from "../../httpRequests";
 import validateForm from "../../util/validation";
 import FormHelperText from "@material-ui/core/FormHelperText";
@@ -46,16 +48,33 @@ const TaskDialog = props => {
     errors: {},
     isValid: false
   });
+  function resetFields() {
+    setValues({
+      title: "",
+      priority: 0,
+      description: ""
+    });
+  }
   useEffect(() => {
     if (props.editing) {
       setValues(props.selectedTask);
+    } else {
+      resetFields();
     }
   }, [props.editing, props.selectedTask]);
+
   const handleChange = name => event => {
     setValues({ ...values, [name]: event.target.value });
   };
 
-  const submitForm = e => {
+  function submitSuccess(res, message) {
+    props.updateTasks(res);
+    props.snackbar(message);
+    resetFields();
+    props.handleClose();
+  }
+
+  function submitForm(e) {
     e.preventDefault();
     const body = { ...values };
     const results = validateForm(body);
@@ -68,28 +87,28 @@ const TaskDialog = props => {
       if (props.editing) {
         updateTask(body)
           .then(res => {
-            props.updateTaskList(res);
-            props.snackbar("Update");
-            props.handleClose();
+            submitSuccess(res, "Task updated");
           })
           .catch(err => console.log(err));
       } else {
         createTask(body)
           .then(res => {
-            props.updateTaskList(res);
-            props.snackbar("Create");
-            props.handleClose();
+            submitSuccess(res, "Task created");
           })
           .catch(err => console.log(err));
       }
     }
-  };
+  }
+
   return (
     <div>
       <Dialog
         fullScreen={fullScreen}
         open={props.open}
-        onClose={props.handleClose}
+        onClose={() => {
+          resetFields();
+          props.handleClose();
+        }}
       >
         <DialogTitle className={classes.header}>{"Add New Task"}</DialogTitle>
         <DialogContent className={classes.container}>
@@ -111,7 +130,6 @@ const TaskDialog = props => {
               label="Description"
               multiline
               fullWidth
-              rows="4"
               rowsMax="4"
               value={values.description}
               onChange={handleChange("description")}
@@ -151,10 +169,13 @@ const TaskDialog = props => {
                 color="primary"
                 type="submit"
               >
-                Create
+                {props.editing ? "Update" : "Create"}
               </Button>
               <Button
-                onClick={props.handleClose}
+                onClick={() => {
+                  resetFields();
+                  props.handleClose();
+                }}
                 variant="contained"
                 size="medium"
                 color="inherit"

@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-export default function orderBy(fetchedTask, value, cb) {
+export default function orderBy(fetchedTask, value) {
   let newTaskList;
   switch (value) {
     case "title":
@@ -22,5 +22,5 @@ export default function orderBy(fetchedTask, value, cb) {
       newTaskList = fetchedTask;
       break;
   }
-  cb(newTaskList);
+  return newTaskList;
 }

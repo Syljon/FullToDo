@@ -1,9 +1,8 @@
 import React from "react";
-import Button from "@material-ui/core/Button";
+import { Button, Typography } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core/styles";
 import DeleteIcon from "@material-ui/icons/Delete";
 import EditIcon from "@material-ui/icons/Edit";
-import Typography from "@material-ui/core/Typography";
 
 const useStyles = makeStyles(theme => ({
   toolbar: theme.mixins.toolbar,
@@ -17,9 +16,6 @@ const useStyles = makeStyles(theme => ({
   },
   rightIcon: {
     marginLeft: theme.spacing(1)
-  },
-  iconSmall: {
-    fontSize: 20
   }
 }));
 
