@@ -4,7 +4,7 @@ import _ from "lodash";
 import { withSnackbar, useSnackbar } from "notistack";
 import AddIcon from "@material-ui/icons/Add";
 import Fab from "@material-ui/core/Fab";
-import { getTasks, deleteTask } from "./httpRequests";
+import { getTasks, deleteTask, updateTask } from "./httpRequests";
 import orderBy from "./util/orderBy";
 import Header from "./components/Header/Header";
 import Drawer from "./components/Drawer/Drawer";
@@ -35,14 +35,19 @@ function App() {
 
   const drawerWidth = 250;
 
+  const [fetchedTaskList, setFetchedTaskList] = React.useState([]);
+
+  const [showedTasksList, setShowedTasksList] = React.useState([]);
+
   const [openStatus, setOpenToggle] = React.useState({
     drawer: false,
     dialog: false
   });
 
-  const [tasksList, setTasksList] = React.useState([]);
-
-  const [sortBy, setSortBy] = React.useState("title");
+  const [drawerValues, setDrawerValues] = React.useState({
+    sortBy: "title",
+    showAll: false
+  });
 
   const [selectedTask, setSelectedTask] = React.useState({
     title: "",
@@ -62,6 +67,25 @@ function App() {
     });
   }
 
+  useEffect(() => {
+    getTasks()
+      .then(res => setFetchedTaskList(res))
+      .catch(err => console.log(err));
+  }, []);
+
+  useEffect(() => {
+    updateTaskList(fetchedTaskList);
+  }, [drawerValues.showAll, drawerValues.sortBy, fetchedTaskList]);
+
+  function updateTaskList(newList) {
+    console.log("Update List");
+    let updTable = orderBy(newList, drawerValues.sortBy);
+    if (!drawerValues.showAll) {
+      updTable = updTable.filter(t => !t.done);
+    }
+    setShowedTasksList(updTable);
+  }
+
   function handleOpenToggle(name) {
     if (name === "dialog" && openStatus.dialog) {
       setEditing(false);
@@ -70,24 +94,20 @@ function App() {
   }
 
   function selectTask(id) {
-    const task = _.find(tasksList, { _id: id });
+    const task = _.find(showedTasksList, { _id: id });
     setSelectedTask(task);
     setOpenToggle({ ...openStatus, drawer: false });
   }
 
-  function updateTaskList(newList) {
-    setTasksList(orderBy(newList, sortBy));
-  }
-
   function updateTasks(newTask) {
-    let tasks = tasksList;
+    let tasks = fetchedTaskList;
 
-    const match = _.find(tasksList, { _id: newTask._id });
+    const match = _.find(fetchedTaskList, { _id: newTask._id });
     if (match) {
-      tasks = tasksList.filter(t => t._id !== newTask._id);
+      tasks = fetchedTaskList.filter(t => t._id !== newTask._id);
       tasks = [...tasks, newTask];
     } else {
-      tasks = [...tasksList, newTask];
+      tasks = [...fetchedTaskList, newTask];
     }
     updateTaskList(tasks);
     setSelectedTask({
@@ -101,13 +121,28 @@ function App() {
     setEditing(!editing);
     handleOpenToggle("dialog");
   }
+  function markAsDone(body) {
+    body.done = true;
+    console.log(body);
+    updateTask(body)
+      .then(res => {
+        updateTaskList(fetchedTaskList);
+        setSelectedTask({
+          title: "",
+          priority: 0,
+          description: ""
+        });
+        snackbar("Task marked as Done");
+      })
+      .catch(err => console.log(err));
+  }
 
   function removeTaskFromList(newTask) {
     deleteTask(newTask._id)
       .then(res => {
         console.log(newTask);
-        let tasks = tasksList;
-        tasks = tasksList.filter(t => t._id !== newTask._id);
+        let tasks = fetchedTaskList;
+        tasks = fetchedTaskList.filter(t => t._id !== newTask._id);
         updateTaskList(tasks);
         setSelectedTask({
           title: "",
@@ -119,12 +154,6 @@ function App() {
       .catch(err => console.log(err));
   }
 
-  useEffect(() => {
-    getTasks()
-      .then(res => updateTaskList(res))
-      .catch(err => console.log(err));
-  }, []);
-
   window.addEventListener("resize", () => {
     if (openStatus.drawer) {
       handleOpenToggle("drawer");
@@ -135,10 +164,10 @@ function App() {
     <Drawer
       colors={colors}
       clicked={selectTask}
-      tasksList={tasksList}
-      setSortBy={setSortBy}
-      sortBy={sortBy}
-      setTasksList={setTasksList}
+      tasksList={showedTasksList}
+      setDrawerValues={setDrawerValues}
+      drawerValues={drawerValues}
+      setTasksList={setShowedTasksList}
       selectedTask={selectedTask}
     ></Drawer>
   );
@@ -155,6 +184,7 @@ function App() {
         mobileOpen={openStatus.drawer}
       />
       <Task
+        markAsDone={markAsDone}
         removeTaskFromList={removeTaskFromList}
         editTask={editTask}
         selectedTask={selectedTask}

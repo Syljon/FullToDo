@@ -9,7 +9,8 @@ import {
   FormControl,
   Select
 } from "@material-ui/core";
-
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import Checkbox from "@material-ui/core/Checkbox";
 import orderBy from "../../util/orderBy";
 
 const useStyles = makeStyles(theme => ({
@@ -22,16 +23,25 @@ const useStyles = makeStyles(theme => ({
 export default function Drawer(props) {
   const classes = useStyles(props);
 
+  const showAll = event => {
+    props.setDrawerValues({
+      ...props.drawerValues,
+      showAll: !props.drawerValues.showAll
+    });
+  };
   function handleChange(event) {
     props.setTasksList(orderBy(props.tasksList, event.target.value));
-    props.setSortBy(event.target.value);
+    props.setDrawerValues({
+      ...props.drawerValues,
+      sortBy: event.target.value
+    });
   }
   return (
     <div>
       <div className={classes.toolbar}>
         <FormControl>
           <Select
-            value={props.sortBy}
+            value={props.drawerValues.sortBy}
             onChange={handleChange}
             name="sortBy"
             displayEmpty
@@ -39,12 +49,19 @@ export default function Drawer(props) {
             <MenuItem value="title">Title</MenuItem>
             <MenuItem value="priority">Priority</MenuItem>
             <MenuItem value="createdDate">Create</MenuItem>
-          </Select>
+          </Select>{" "}
         </FormControl>
+        <br></br>
+        <FormControlLabel
+          control={
+            <Checkbox checked={props.drawerValues.showAll} onChange={showAll} />
+          }
+          label="Show All"
+        />
       </div>
       <Divider />
       <List>
-        {props.tasksList.map(({ _id, title, priority }) => (
+        {props.tasksList.map(({ _id, title, priority, done }) => (
           <ListItem
             onClick={() => {
               props.clicked(_id);
@@ -58,7 +75,13 @@ export default function Drawer(props) {
             key={_id}
             style={{ borderLeft: "5px solid " + props.colors[priority - 1] }}
           >
-            <ListItemText style={{ wordBreak: "break-all" }} primary={title} />
+            <ListItemText
+              style={{
+                wordBreak: "break-all",
+                textDecoration: done ? "line-through" : "none"
+              }}
+              primary={title}
+            />
           </ListItem>
         ))}
       </List>

@@ -17,12 +17,14 @@ exports.createTask = (req, res, next) => {
   const description = req.body.description;
   const priority = req.body.priority;
   const createdDate = req.body.createdDate;
+  const done = req.body.done;
 
   const task = new Task({
     title,
     createdDate,
     description,
-    priority
+    priority,
+    done
   });
   task
     .save()
@@ -41,6 +43,7 @@ exports.updateTask = (req, res, next) => {
       results.createdDate = req.body.createdDate;
       results.description = req.body.description;
       results.priority = req.body.priority;
+      results.done = req.body.done;
       results.save();
       return res.json(results);
     })

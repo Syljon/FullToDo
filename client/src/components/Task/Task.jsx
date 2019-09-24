@@ -48,6 +48,15 @@ const Task = props => {
           >
             Delete
             <DeleteIcon className={classes.rightIcon} />
+          </Button>{" "}
+          <Button
+            variant="contained"
+            color="primary"
+            className={classes.button}
+            onClick={() => props.markAsDone(props.selectedTask)}
+          >
+            Done
+            <EditIcon className={classes.rightIcon} />
           </Button>
         </>
       )}
